@@ -469,3 +469,5 @@ local.properties
 
 # Kiro specific
 .kiro/settings/mcp.json
+.kiro/settings/
+.kiro/
