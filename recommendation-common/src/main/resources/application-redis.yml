@@ -1,0 +1,66 @@
+# Redis配置文件
+# 包含Redis连接配置和缓存设置
+
+spring:
+  redis:
+    # Redis服务器配置
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: ${REDIS_DATABASE:0}
+    timeout: 5000ms
+    
+    # Jedis连接池配置
+    jedis:
+      pool:
+        # 连接池最大连接数
+        max-active: 20
+        # 连接池最大空闲连接数
+        max-idle: 10
+        # 连接池最小空闲连接数
+        min-idle: 5
+        # 连接池最大阻塞等待时间(使用负值表示没有限制)
+        max-wait: -1ms
+        
+    # 集群配置(如果使用Redis集群)
+    cluster:
+      nodes: ${REDIS_CLUSTER_NODES:}
+      max-redirects: 3
+      
+    # 哨兵配置(如果使用Redis哨兵)
+    sentinel:
+      master: ${REDIS_SENTINEL_MASTER:}
+      nodes: ${REDIS_SENTINEL_NODES:}
+
+# 缓存配置
+cache:
+  redis:
+    # 默认过期时间(秒)
+    default-expire-time: 3600
+    # 短期缓存过期时间(秒)
+    short-expire-time: 300
+    # 长期缓存过期时间(秒)
+    long-expire-time: 86400
+    
+    # 缓存key前缀
+    key-prefix: "recommendation:"
+    
+    # 是否启用缓存统计
+    enable-statistics: true
+    
+    # 缓存预热配置
+    warmup:
+      enabled: true
+      # 预热用户数量
+      user-count: 1000
+      # 预热内容数量
+      content-count: 5000
+      # 预热时间间隔(分钟)
+      interval: 60
+
+# 日志配置
+logging:
+  level:
+    redis.clients.jedis: INFO
+    org.springframework.data.redis: DEBUG
+    com.recommendation.common.service: DEBUG

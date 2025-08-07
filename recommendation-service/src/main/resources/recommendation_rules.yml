@@ -1,0 +1,238 @@
+# 推荐系统Prometheus告警规则
+groups:
+- name: recommendation.rules
+  rules:
+  # 推荐服务响应时间告警
+  - alert: HighRecommendationResponseTime
+    expr: histogram_quantile(0.95, rate(recommendation_request_duration_seconds_bucket[5m])) > 0.5
+    for: 2m
+    labels:
+      severity: warning
+      service: recommendation
+    annotations:
+      summary: "推荐服务响应时间过高"
+      description: "推荐服务95%分位响应时间超过500ms，当前值: {{ $value }}s"
+
+  # 推荐服务错误率告警
+  - alert: HighRecommendationErrorRate
+    expr: rate(recommendation_request_errors_total[5m]) / rate(recommendation_request_total[5m]) > 0.05
+    for: 2m
+    labels:
+      severity: critical
+      service: recommendation
+    annotations:
+      summary: "推荐服务错误率过高"
+      description: "推荐服务错误率超过5%，当前值: {{ $value | humanizePercentage }}"
+
+  # 缓存命中率告警
+  - alert: LowCacheHitRate
+    expr: rate(recommendation_cache_hits_total[5m]) / (rate(recommendation_cache_hits_total[5m]) + rate(recommendation_cache_misses_total[5m])) < 0.8
+    for: 5m
+    labels:
+      severity: warning
+      service: cache
+    annotations:
+      summary: "缓存命中率过低"
+      description: "缓存命中率低于80%，当前值: {{ $value | humanizePercentage }}"
+
+  # QPS过高告警
+  - alert: HighQPS
+    expr: recommendation_qps > 8000
+    for: 1m
+    labels:
+      severity: warning
+      service: recommendation
+    annotations:
+      summary: "推荐服务QPS过高"
+      description: "推荐服务QPS超过8000，当前值: {{ $value }}"
+
+  # 系统CPU使用率告警
+  - alert: HighCPUUsage
+    expr: recommendation_system_cpu_usage > 80
+    for: 5m
+    labels:
+      severity: warning
+      service: system
+    annotations:
+      summary: "系统CPU使用率过高"
+      description: "系统CPU使用率超过80%，当前值: {{ $value }}%"
+
+  # 系统内存使用率告警
+  - alert: HighMemoryUsage
+    expr: recommendation_system_memory_usage > 85
+    for: 5m
+    labels:
+      severity: warning
+      service: system
+    annotations:
+      summary: "系统内存使用率过高"
+      description: "系统内存使用率超过85%，当前值: {{ $value }}%"
+
+  # JVM堆内存使用率告警
+  - alert: HighHeapUsage
+    expr: recommendation_system_heap_usage > 90
+    for: 3m
+    labels:
+      severity: critical
+      service: jvm
+    annotations:
+      summary: "JVM堆内存使用率过高"
+      description: "JVM堆内存使用率超过90%，当前值: {{ $value }}%"
+
+  # 数据库连接池告警
+  - alert: HighDatabaseConnectionUsage
+    expr: recommendation_db_pool_active / recommendation_db_pool_total > 0.8
+    for: 3m
+    labels:
+      severity: warning
+      service: database
+    annotations:
+      summary: "数据库连接池使用率过高"
+      description: "数据库连接池使用率超过80%，当前活跃连接: {{ $labels.active }}"
+
+  # Redis连接池告警
+  - alert: HighRedisConnectionUsage
+    expr: recommendation_redis_pool_active / recommendation_redis_pool_total > 0.8
+    for: 3m
+    labels:
+      severity: warning
+      service: redis
+    annotations:
+      summary: "Redis连接池使用率过高"
+      description: "Redis连接池使用率超过80%，当前活跃连接: {{ $labels.active }}"
+
+  # 数据库操作响应时间告警
+  - alert: HighDatabaseResponseTime
+    expr: histogram_quantile(0.95, rate(recommendation_database_operation_duration_seconds_bucket[5m])) > 1.0
+    for: 2m
+    labels:
+      severity: warning
+      service: database
+    annotations:
+      summary: "数据库操作响应时间过高"
+      description: "数据库操作95%分位响应时间超过1秒，当前值: {{ $value }}s"
+
+  # Redis操作响应时间告警
+  - alert: HighRedisResponseTime
+    expr: histogram_quantile(0.95, rate(recommendation_redis_operation_duration_seconds_bucket[5m])) > 0.1
+    for: 2m
+    labels:
+      severity: warning
+      service: redis
+    annotations:
+      summary: "Redis操作响应时间过高"
+      description: "Redis操作95%分位响应时间超过100ms，当前值: {{ $value }}s"
+
+  # 召回服务响应时间告警
+  - alert: HighRecallResponseTime
+    expr: histogram_quantile(0.95, rate(recommendation_recall_duration_seconds_bucket[5m])) > 0.2
+    for: 2m
+    labels:
+      severity: warning
+      service: recall
+    annotations:
+      summary: "召回服务响应时间过高"
+      description: "召回服务95%分位响应时间超过200ms，当前值: {{ $value }}s"
+
+  # 排序服务响应时间告警
+  - alert: HighRankingResponseTime
+    expr: histogram_quantile(0.95, rate(recommendation_ranking_duration_seconds_bucket[5m])) > 0.3
+    for: 2m
+    labels:
+      severity: warning
+      service: ranking
+    annotations:
+      summary: "排序服务响应时间过高"
+      description: "排序服务95%分位响应时间超过300ms，当前值: {{ $value }}s"
+
+  # 服务不可用告警
+  - alert: ServiceDown
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "服务不可用"
+      description: "服务 {{ $labels.job }} 已停止响应"
+
+  # 算法性能告警
+  - alert: LowAlgorithmPerformance
+    expr: recommendation_algorithm_result_count / recommendation_algorithm_candidate_count < 0.1
+    for: 5m
+    labels:
+      severity: warning
+      service: algorithm
+    annotations:
+      summary: "算法性能下降"
+      description: "算法 {{ $labels.algorithm }} 结果转换率过低，当前值: {{ $value | humanizePercentage }}"
+
+  # 推荐效果告警
+  - alert: LowCTR
+    expr: recommendation_ctr_realtime < 2
+    for: 10m
+    labels:
+      severity: warning
+      service: recommendation
+    annotations:
+      summary: "推荐CTR过低"
+      description: "{{ $labels.content_type }}-{{ $labels.algorithm }} CTR低于2%，当前值: {{ $value }}%"
+
+  - alert: LowCVR
+    expr: recommendation_cvr_realtime < 0.5
+    for: 10m
+    labels:
+      severity: warning
+      service: recommendation
+    annotations:
+      summary: "推荐CVR过低"
+      description: "{{ $labels.content_type }}-{{ $labels.algorithm }} CVR低于0.5%，当前值: {{ $value }}%"
+
+  - alert: LowDiversity
+    expr: recommendation_diversity_category < 0.3
+    for: 15m
+    labels:
+      severity: warning
+      service: recommendation
+    annotations:
+      summary: "推荐多样性过低"
+      description: "算法 {{ $labels.algorithm }} 分类多样性过低，当前值: {{ $value }}"
+
+  - alert: LowCoverage
+    expr: recommendation_coverage_item < 30
+    for: 30m
+    labels:
+      severity: warning
+      service: recommendation
+    annotations:
+      summary: "推荐覆盖率过低"
+      description: "算法 {{ $labels.algorithm }} 物品覆盖率低于30%，当前值: {{ $value }}%"
+
+  - alert: HighAnomalyRate
+    expr: rate(recommendation_anomaly_low_ctr_total[5m]) + rate(recommendation_anomaly_low_cvr_total[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: critical
+      service: recommendation
+    annotations:
+      summary: "推荐异常率过高"
+      description: "{{ $labels.content_type }}-{{ $labels.algorithm }} 异常检测频率过高"
+
+  - alert: LowUserEngagement
+    expr: histogram_quantile(0.50, rate(recommendation_session_duration_seconds_bucket[5m])) < 30
+    for: 15m
+    labels:
+      severity: warning
+      service: recommendation
+    annotations:
+      summary: "用户参与度过低"
+      description: "用户会话时长中位数低于30秒，当前值: {{ $value }}s"
+
+  - alert: UnfairRecommendation
+    expr: max by (algorithm) (recommendation_fairness_ctr) / min by (algorithm) (recommendation_fairness_ctr) > 2
+    for: 30m
+    labels:
+      severity: warning
+      service: recommendation
+    annotations:
+      summary: "推荐公平性问题"
+      description: "算法 {{ $labels.algorithm }} 不同群体间CTR差异过大"

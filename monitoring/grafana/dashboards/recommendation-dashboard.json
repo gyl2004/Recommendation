@@ -1,0 +1,227 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "推荐系统监控仪表板",
+    "tags": ["recommendation", "monitoring"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "推荐请求QPS",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(recommendation_request_total[1m])",
+            "legendFormat": "QPS"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 5000},
+                {"color": "red", "value": 8000}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "推荐请求响应时间",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(recommendation_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(recommendation_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(recommendation_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P99"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "错误率",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(recommendation_request_errors_total[5m]) / rate(recommendation_request_total[5m]) * 100",
+            "legendFormat": "错误率"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 1},
+                {"color": "red", "value": 5}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "缓存命中率",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(recommendation_cache_hits_total[5m]) / (rate(recommendation_cache_hits_total[5m]) + rate(recommendation_cache_misses_total[5m])) * 100",
+            "legendFormat": "缓存命中率"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "系统资源使用率",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "recommendation_system_cpu_usage",
+            "legendFormat": "CPU使用率"
+          },
+          {
+            "expr": "recommendation_system_memory_usage",
+            "legendFormat": "内存使用率"
+          },
+          {
+            "expr": "recommendation_system_heap_usage",
+            "legendFormat": "堆内存使用率"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 6,
+        "title": "数据库连接池状态",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "recommendation_db_pool_active",
+            "legendFormat": "活跃连接"
+          },
+          {
+            "expr": "recommendation_db_pool_idle",
+            "legendFormat": "空闲连接"
+          },
+          {
+            "expr": "recommendation_db_pool_total",
+            "legendFormat": "总连接数"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 16}
+      },
+      {
+        "id": 7,
+        "title": "Redis连接池状态",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "recommendation_redis_pool_active",
+            "legendFormat": "活跃连接"
+          },
+          {
+            "expr": "recommendation_redis_pool_idle",
+            "legendFormat": "空闲连接"
+          },
+          {
+            "expr": "recommendation_redis_pool_total",
+            "legendFormat": "总连接数"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 16}
+      },
+      {
+        "id": 8,
+        "title": "算法性能指标",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(recommendation_recall_duration_seconds_bucket[5m]))",
+            "legendFormat": "召回响应时间P95"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(recommendation_ranking_duration_seconds_bucket[5m]))",
+            "legendFormat": "排序响应时间P95"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 16}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}

@@ -1,0 +1,339 @@
+# Kong声明式配置文件
+_format_version: "3.0"
+_transform: true
+
+# 服务定义
+services:
+  - name: recommendation-service
+    url: http://recommendation-service:8080
+    protocol: http
+    host: recommendation-service
+    port: 8080
+    path: /
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 10000
+    retries: 3
+    tags:
+      - recommendation
+      - core-service
+
+  - name: user-service
+    url: http://user-service:8081
+    protocol: http
+    host: user-service
+    port: 8081
+    path: /
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 10000
+    retries: 3
+    tags:
+      - user
+      - core-service
+
+  - name: content-service
+    url: http://content-service:8082
+    protocol: http
+    host: content-service
+    port: 8082
+    path: /
+    connect_timeout: 5000
+    write_timeout: 15000
+    read_timeout: 15000
+    retries: 3
+    tags:
+      - content
+      - core-service
+
+  - name: feature-service
+    url: http://feature-service:8000
+    protocol: http
+    host: feature-service
+    port: 8000
+    path: /
+    connect_timeout: 3000
+    write_timeout: 8000
+    read_timeout: 8000
+    retries: 3
+    tags:
+      - feature
+      - ml-service
+
+# 路由定义
+routes:
+  - name: recommendation-routes
+    service: recommendation-service
+    protocols:
+      - http
+      - https
+    methods:
+      - GET
+      - POST
+    paths:
+      - /api/v1/recommend
+    strip_path: false
+    preserve_host: false
+    tags:
+      - recommendation
+
+  - name: user-routes
+    service: user-service
+    protocols:
+      - http
+      - https
+    methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+    paths:
+      - /api/v1/users
+      - /api/v1/auth
+    strip_path: false
+    preserve_host: false
+    tags:
+      - user
+
+  - name: content-routes
+    service: content-service
+    protocols:
+      - http
+      - https
+    methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+    paths:
+      - /api/v1/contents
+    strip_path: false
+    preserve_host: false
+    tags:
+      - content
+
+  - name: feature-routes
+    service: feature-service
+    protocols:
+      - http
+      - https
+    methods:
+      - GET
+      - POST
+    paths:
+      - /api/v1/features
+    strip_path: false
+    preserve_host: false
+    tags:
+      - feature
+
+# 消费者定义
+consumers:
+  - username: web-client
+    custom_id: web-client-001
+    tags:
+      - web
+      - client
+
+  - username: mobile-client
+    custom_id: mobile-client-001
+    tags:
+      - mobile
+      - client
+
+  - username: admin-user
+    custom_id: admin-001
+    tags:
+      - admin
+      - internal
+
+# 插件配置
+plugins:
+  # 全局限流插件
+  - name: rate-limiting
+    config:
+      minute: 1000
+      hour: 10000
+      day: 100000
+      policy: redis
+      redis_host: redis
+      redis_port: 6379
+      redis_database: 1
+      hide_client_headers: false
+    tags:
+      - global
+      - rate-limiting
+
+  # 全局CORS插件
+  - name: cors
+    config:
+      origins:
+        - "http://localhost:3000"
+        - "https://recommendation.com"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Accept-Version
+        - Content-Length
+        - Content-MD5
+        - Content-Type
+        - Date
+        - Authorization
+        - X-Auth-Token
+      exposed_headers:
+        - X-Auth-Token
+      credentials: true
+      max_age: 3600
+    tags:
+      - global
+      - cors
+
+  # JWT认证插件（应用于需要认证的路由）
+  - name: jwt
+    route: recommendation-routes
+    config:
+      uri_param_names:
+        - jwt
+      cookie_names:
+        - jwt
+      header_names:
+        - authorization
+      claims_to_verify:
+        - exp
+        - iat
+      key_claim_name: iss
+      secret_is_base64: false
+      anonymous: ""
+      run_on_preflight: true
+    tags:
+      - auth
+      - jwt
+
+  - name: jwt
+    route: user-routes
+    config:
+      uri_param_names:
+        - jwt
+      cookie_names:
+        - jwt
+      header_names:
+        - authorization
+      claims_to_verify:
+        - exp
+        - iat
+      key_claim_name: iss
+      secret_is_base64: false
+      anonymous: ""
+      run_on_preflight: true
+    tags:
+      - auth
+      - jwt
+
+  # 推荐服务专用限流
+  - name: rate-limiting
+    route: recommendation-routes
+    config:
+      minute: 500
+      hour: 5000
+      day: 50000
+      policy: redis
+      redis_host: redis
+      redis_port: 6379
+      redis_database: 1
+      hide_client_headers: false
+    tags:
+      - recommendation
+      - rate-limiting
+
+  # 登录接口特殊限流
+  - name: rate-limiting
+    route: user-routes
+    config:
+      minute: 10
+      hour: 100
+      day: 1000
+      policy: redis
+      redis_host: redis
+      redis_port: 6379
+      redis_database: 1
+      hide_client_headers: false
+      fault_tolerant: true
+    tags:
+      - auth
+      - strict-limiting
+
+  # 请求日志插件
+  - name: file-log
+    config:
+      path: /var/log/kong/access.log
+      reopen: true
+    tags:
+      - global
+      - logging
+
+  # 响应转换插件
+  - name: response-transformer
+    config:
+      remove:
+        headers:
+          - "X-Powered-By"
+          - "Server"
+      add:
+        headers:
+          - "X-API-Gateway: Kong"
+          - "X-Response-Time: $upstream_response_time"
+    tags:
+      - global
+      - security
+
+  # Prometheus监控插件
+  - name: prometheus
+    config:
+      per_consumer: true
+      status_code_metrics: true
+      latency_metrics: true
+      bandwidth_metrics: true
+      upstream_health_metrics: true
+    tags:
+      - global
+      - monitoring
+
+# JWT凭证
+jwt_secrets:
+  - consumer: web-client
+    key: web-client-key
+    secret: "your-256-bit-secret-key-here-change-in-production"
+    algorithm: HS256
+    tags:
+      - web-client
+
+  - consumer: mobile-client
+    key: mobile-client-key
+    secret: "your-256-bit-secret-key-here-change-in-production"
+    algorithm: HS256
+    tags:
+      - mobile-client
+
+  - consumer: admin-user
+    key: admin-key
+    secret: "your-admin-256-bit-secret-key-here-change-in-production"
+    algorithm: HS256
+    tags:
+      - admin
+
+# API密钥
+keyauth_credentials:
+  - consumer: web-client
+    key: web-client-api-key-12345
+    tags:
+      - web-client
+
+  - consumer: mobile-client
+    key: mobile-client-api-key-67890
+    tags:
+      - mobile-client

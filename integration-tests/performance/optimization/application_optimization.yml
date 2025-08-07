@@ -1,0 +1,337 @@
+# Spring Boot应用性能优化配置
+# 适用于智能内容推荐平台
+
+server:
+  port: 8080
+  # Tomcat优化配置
+  tomcat:
+    # 最大连接数
+    max-connections: 10000
+    # 接受队列长度
+    accept-count: 1000
+    # 最大工作线程数
+    threads:
+      max: 800
+      min-spare: 100
+    # 连接超时时间
+    connection-timeout: 20000
+    # Keep-Alive超时时间
+    keep-alive-timeout: 60000
+    # 最大Keep-Alive请求数
+    max-keep-alive-requests: 1000
+    # 最大HTTP头大小
+    max-http-header-size: 8192
+    # 最大HTTP POST大小
+    max-http-post-size: 2097152
+  # 压缩配置
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+    min-response-size: 1024
+
+spring:
+  # 数据源配置优化
+  datasource:
+    # HikariCP连接池配置
+    hikari:
+      # 最大连接池大小
+      maximum-pool-size: 50
+      # 最小空闲连接数
+      minimum-idle: 10
+      # 连接超时时间
+      connection-timeout: 30000
+      # 空闲连接超时时间
+      idle-timeout: 600000
+      # 连接最大生命周期
+      max-lifetime: 1800000
+      # 连接测试查询
+      connection-test-query: SELECT 1
+      # 连接池名称
+      pool-name: RecommendationHikariCP
+      # 自动提交
+      auto-commit: true
+      # 连接初始化SQL
+      connection-init-sql: SET NAMES utf8mb4
+      # 验证超时时间
+      validation-timeout: 5000
+      # 泄漏检测阈值
+      leak-detection-threshold: 60000
+
+  # JPA配置优化
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        # 方言
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        # 显示SQL
+        show_sql: false
+        # 格式化SQL
+        format_sql: false
+        # 批处理大小
+        jdbc:
+          batch_size: 50
+          batch_versioned_data: true
+        # 二级缓存
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+          region:
+            factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+        # 统计信息
+        generate_statistics: false
+        # 连接释放模式
+        connection:
+          release_mode: after_transaction
+        # 查询计划缓存
+        query:
+          plan_cache_max_size: 2048
+          plan_parameter_metadata_max_size: 128
+
+  # Redis配置优化
+  redis:
+    # 连接池配置
+    jedis:
+      pool:
+        # 最大连接数
+        max-active: 200
+        # 最大空闲连接数
+        max-idle: 50
+        # 最小空闲连接数
+        min-idle: 10
+        # 获取连接最大等待时间
+        max-wait: 3000ms
+        # 连接空闲时间
+        time-between-eviction-runs: 30000ms
+        # 空闲连接最小生存时间
+        min-evictable-idle-time: 60000ms
+        # 测试空闲连接
+        test-while-idle: true
+        # 获取连接时测试
+        test-on-borrow: false
+        # 归还连接时测试
+        test-on-return: false
+    # 连接超时时间
+    timeout: 5000ms
+    # 数据库索引
+    database: 0
+    # 密码
+    password: ${REDIS_PASSWORD:}
+
+  # 缓存配置
+  cache:
+    type: redis
+    redis:
+      # 缓存过期时间
+      time-to-live: 3600000
+      # 缓存空值
+      cache-null-values: false
+      # 键前缀
+      key-prefix: "recommendation:"
+      # 使用键前缀
+      use-key-prefix: true
+
+  # 异步配置
+  task:
+    execution:
+      pool:
+        # 核心线程数
+        core-size: 10
+        # 最大线程数
+        max-size: 50
+        # 队列容量
+        queue-capacity: 1000
+        # 线程名前缀
+        thread-name-prefix: "async-"
+        # 线程空闲时间
+        keep-alive: 60s
+    scheduling:
+      pool:
+        size: 5
+
+  # Jackson配置优化
+  jackson:
+    # 序列化配置
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    # 反序列化配置
+    deserialization:
+      fail-on-unknown-properties: false
+      accept-empty-string-as-null-object: true
+    # 默认属性包含
+    default-property-inclusion: non_null
+
+  # 消息队列配置 (RabbitMQ)
+  rabbitmq:
+    # 连接配置
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    # 连接超时时间
+    connection-timeout: 30000
+    # 发布确认
+    publisher-confirm-type: correlated
+    # 发布返回
+    publisher-returns: true
+    # 监听器配置
+    listener:
+      simple:
+        # 并发消费者数量
+        concurrency: 5
+        # 最大并发消费者数量
+        max-concurrency: 20
+        # 预取数量
+        prefetch: 10
+        # 重试配置
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+          max-interval: 10000
+          multiplier: 2.0
+
+# 日志配置优化
+logging:
+  level:
+    root: WARN
+    com.recommendation: INFO
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/recommendation-service.log
+    max-size: 100MB
+    max-history: 30
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5,0.9,0.95,0.99
+      sla:
+        http.server.requests: 100ms,200ms,500ms,1s,2s
+
+# 应用特定配置
+recommendation:
+  # 推荐配置
+  algorithm:
+    # 召回配置
+    recall:
+      # 协同过滤召回数量
+      collaborative-filtering-size: 100
+      # 内容召回数量
+      content-based-size: 100
+      # 热门召回数量
+      popular-size: 50
+      # 用户历史召回数量
+      user-history-size: 50
+    # 排序配置
+    ranking:
+      # 排序模型类型
+      model-type: wide-deep
+      # 特征维度
+      feature-dimension: 128
+      # 批处理大小
+      batch-size: 1000
+    # 融合配置
+    fusion:
+      # 协同过滤权重
+      collaborative-weight: 0.4
+      # 内容权重
+      content-weight: 0.3
+      # 热门权重
+      popular-weight: 0.2
+      # 用户历史权重
+      history-weight: 0.1
+
+  # 缓存配置
+  cache:
+    # 用户特征缓存时间 (秒)
+    user-features-ttl: 3600
+    # 推荐结果缓存时间 (秒)
+    recommendation-result-ttl: 1800
+    # 内容特征缓存时间 (秒)
+    content-features-ttl: 7200
+    # 热门内容缓存时间 (秒)
+    popular-content-ttl: 600
+
+  # 性能配置
+  performance:
+    # 推荐超时时间 (毫秒)
+    recommendation-timeout: 500
+    # 特征获取超时时间 (毫秒)
+    feature-timeout: 100
+    # 召回超时时间 (毫秒)
+    recall-timeout: 200
+    # 排序超时时间 (毫秒)
+    ranking-timeout: 200
+
+  # 降级配置
+  fallback:
+    # 启用降级
+    enabled: true
+    # 降级阈值 (错误率)
+    error-threshold: 0.5
+    # 降级时间窗口 (秒)
+    time-window: 60
+    # 最小请求数
+    minimum-requests: 20
+
+# Hystrix配置 (如果使用)
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 5000
+        timeout:
+          enabled: true
+      circuitBreaker:
+        requestVolumeThreshold: 20
+        errorThresholdPercentage: 50
+        sleepWindowInMilliseconds: 5000
+      metrics:
+        rollingStats:
+          timeInMilliseconds: 10000
+          numBuckets: 10
+
+# Feign配置 (如果使用)
+feign:
+  hystrix:
+    enabled: true
+  compression:
+    request:
+      enabled: true
+      mime-types: application/json,application/xml,text/xml,text/plain
+      min-request-size: 2048
+    response:
+      enabled: true
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000

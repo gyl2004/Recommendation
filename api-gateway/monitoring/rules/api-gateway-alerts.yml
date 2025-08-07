@@ -1,0 +1,170 @@
+# API网关告警规则
+groups:
+  - name: api-gateway.rules
+    interval: 30s
+    rules:
+      # 高响应时间告警
+      - alert: HighAPIResponseTime
+        expr: histogram_quantile(0.95, rate(kong_http_requests_total_duration_seconds_bucket[5m])) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          service: api-gateway
+        annotations:
+          summary: "API网关响应时间过高"
+          description: "API网关95%分位响应时间超过500ms，当前值: {{ $value }}s"
+
+      - alert: CriticalAPIResponseTime
+        expr: histogram_quantile(0.95, rate(kong_http_requests_total_duration_seconds_bucket[5m])) > 1.0
+        for: 1m
+        labels:
+          severity: critical
+          service: api-gateway
+        annotations:
+          summary: "API网关响应时间严重过高"
+          description: "API网关95%分位响应时间超过1秒，当前值: {{ $value }}s"
+
+      # 高错误率告警
+      - alert: HighAPIErrorRate
+        expr: rate(kong_http_requests_total{status=~"5.."}[5m]) / rate(kong_http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: api-gateway
+        annotations:
+          summary: "API网关错误率过高"
+          description: "API网关5xx错误率超过5%，当前值: {{ $value | humanizePercentage }}"
+
+      - alert: CriticalAPIErrorRate
+        expr: rate(kong_http_requests_total{status=~"5.."}[5m]) / rate(kong_http_requests_total[5m]) > 0.10
+        for: 1m
+        labels:
+          severity: critical
+          service: api-gateway
+        annotations:
+          summary: "API网关错误率严重过高"
+          description: "API网关5xx错误率超过10%，当前值: {{ $value | humanizePercentage }}"
+
+      # 高QPS告警
+      - alert: HighAPIQPS
+        expr: rate(kong_http_requests_total[1m]) > 8000
+        for: 2m
+        labels:
+          severity: warning
+          service: api-gateway
+        annotations:
+          summary: "API网关QPS过高"
+          description: "API网关QPS超过8000，当前值: {{ $value }}"
+
+      # Kong服务不可用
+      - alert: KongServiceDown
+        expr: up{job="kong"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: kong
+        annotations:
+          summary: "Kong服务不可用"
+          description: "Kong API网关服务已停止响应"
+
+      # Nginx服务不可用
+      - alert: NginxServiceDown
+        expr: up{job="nginx"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: nginx
+        annotations:
+          summary: "Nginx服务不可用"
+          description: "Nginx负载均衡器服务已停止响应"
+
+      # Redis连接数过高
+      - alert: HighRedisConnections
+        expr: redis_connected_clients > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis连接数过高"
+          description: "Redis连接数超过100，当前值: {{ $value }}"
+
+      # Redis内存使用率过高
+      - alert: HighRedisMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis内存使用率过高"
+          description: "Redis内存使用率超过80%，当前值: {{ $value | humanizePercentage }}"
+
+      # 限流触发告警
+      - alert: HighRateLimitHits
+        expr: rate(kong_http_requests_total{status="429"}[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: api-gateway
+        annotations:
+          summary: "限流触发频繁"
+          description: "API网关限流触发频率过高，每秒{{ $value }}次"
+
+      # 上游服务不健康
+      - alert: UpstreamServiceUnhealthy
+        expr: kong_upstream_target_health == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: "{{ $labels.upstream }}"
+        annotations:
+          summary: "上游服务不健康"
+          description: "上游服务 {{ $labels.upstream }} 的目标 {{ $labels.target }} 不健康"
+
+      # SSL证书即将过期
+      - alert: SSLCertificateExpiringSoon
+        expr: (ssl_certificate_expiry_seconds - time()) / 86400 < 30
+        for: 1h
+        labels:
+          severity: warning
+          service: ssl
+        annotations:
+          summary: "SSL证书即将过期"
+          description: "SSL证书将在{{ $value }}天后过期"
+
+      - alert: SSLCertificateExpired
+        expr: ssl_certificate_expiry_seconds - time() < 0
+        for: 1m
+        labels:
+          severity: critical
+          service: ssl
+        annotations:
+          summary: "SSL证书已过期"
+          description: "SSL证书已过期{{ $value | humanizeDuration }}前"
+
+  - name: performance.rules
+    interval: 30s
+    rules:
+      # 性能指标记录规则
+      - record: api_gateway:request_rate_5m
+        expr: rate(kong_http_requests_total[5m])
+
+      - record: api_gateway:error_rate_5m
+        expr: rate(kong_http_requests_total{status=~"5.."}[5m]) / rate(kong_http_requests_total[5m])
+
+      - record: api_gateway:response_time_95p_5m
+        expr: histogram_quantile(0.95, rate(kong_http_requests_total_duration_seconds_bucket[5m]))
+
+      - record: api_gateway:response_time_99p_5m
+        expr: histogram_quantile(0.99, rate(kong_http_requests_total_duration_seconds_bucket[5m]))
+
+      # 按服务分组的指标
+      - record: api_gateway:request_rate_by_service_5m
+        expr: rate(kong_http_requests_total[5m]) by (service)
+
+      - record: api_gateway:error_rate_by_service_5m
+        expr: rate(kong_http_requests_total{status=~"5.."}[5m]) by (service) / rate(kong_http_requests_total[5m]) by (service)
+
+      - record: api_gateway:response_time_95p_by_service_5m
+        expr: histogram_quantile(0.95, rate(kong_http_requests_total_duration_seconds_bucket[5m])) by (service)

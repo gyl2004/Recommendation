@@ -1,0 +1,47 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: content-service-test
+  
+  # 测试数据库配置 - 使用H2内存数据库
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+  
+  # H2控制台配置
+  h2:
+    console:
+      enabled: true
+  
+  # Redis配置 - 使用嵌入式Redis
+  redis:
+    host: localhost
+    port: 6370
+    database: 0
+    timeout: 3000ms
+
+# 测试环境不需要Elasticsearch
+elasticsearch:
+  enabled: false
+
+# 日志配置
+logging:
+  level:
+    com.recommendation: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

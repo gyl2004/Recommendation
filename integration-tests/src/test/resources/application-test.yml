@@ -1,0 +1,111 @@
+# 集成测试配置文件
+spring:
+  profiles:
+    active: test
+  
+  # 数据库配置（由TestContainers动态设置）
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+  
+  # Redis配置（由TestContainers动态设置）
+  redis:
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+  
+  # RabbitMQ配置（由TestContainers动态设置）
+  rabbitmq:
+    virtual-host: /
+    connection-timeout: 15000
+    template:
+      retry:
+        enabled: true
+        initial-interval: 1000
+        max-attempts: 3
+        max-interval: 10000
+        multiplier: 1.0
+
+# Elasticsearch配置（由TestContainers动态设置）
+elasticsearch:
+  connection-timeout: 5000
+  socket-timeout: 30000
+
+# 推荐服务配置
+recommendation:
+  # 缓存配置
+  cache:
+    default-ttl: 300
+    user-profile-ttl: 600
+    hot-content-ttl: 1800
+  
+  # 算法配置
+  algorithm:
+    default-algorithm: wide_deep
+    fallback-algorithm: hot_content
+    diversity-weight: 0.2
+    freshness-weight: 0.1
+  
+  # 性能配置
+  performance:
+    max-candidates: 1000
+    max-recommendations: 100
+    timeout-ms: 500
+
+# 日志配置
+logging:
+  level:
+    com.recommendation: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# 测试专用配置
+test:
+  data:
+    cleanup-enabled: true
+    init-test-data: true
+  
+  performance:
+    concurrent-users: 50
+    test-duration-seconds: 60
+    expected-response-time-ms: 500
+  
+  accuracy:
+    min-precision: 0.7
+    min-recall: 0.6
+    min-diversity: 0.5

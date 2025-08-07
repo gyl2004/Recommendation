@@ -1,0 +1,358 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "推荐效果监控仪表板",
+    "tags": ["recommendation", "effect", "business"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "实时CTR",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "recommendation_ctr_realtime",
+            "legendFormat": "{{content_type}}-{{algorithm}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 2},
+                {"color": "green", "value": 5}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "实时CVR",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "recommendation_cvr_realtime",
+            "legendFormat": "{{content_type}}-{{algorithm}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 0.5},
+                {"color": "green", "value": 2}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "推荐曝光量",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(recommendation_impression_total[5m])",
+            "legendFormat": "{{content_type}}-{{algorithm}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "推荐点击量",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(recommendation_click_total[5m])",
+            "legendFormat": "{{content_type}}-{{algorithm}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "推荐转化量",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(recommendation_conversion_total[5m])",
+            "legendFormat": "{{content_type}}-{{algorithm}}-{{conversion_type}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 6,
+        "title": "用户停留时间分布",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(recommendation_dwell_time_seconds_bucket[5m]))",
+            "legendFormat": "P50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(recommendation_dwell_time_seconds_bucket[5m]))",
+            "legendFormat": "P95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(recommendation_dwell_time_seconds_bucket[5m]))",
+            "legendFormat": "P99"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 16}
+      },
+      {
+        "id": 7,
+        "title": "推荐位置效果分析",
+        "type": "barchart",
+        "targets": [
+          {
+            "expr": "sum by (position_range) (rate(recommendation_click_total[5m])) / sum by (position_range) (rate(recommendation_impression_total[5m])) * 100",
+            "legendFormat": "{{position_range}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 16}
+      },
+      {
+        "id": 8,
+        "title": "推荐收入指标",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(recommendation_conversion_value)",
+            "legendFormat": "总收入"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyCNY",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 10000},
+                {"color": "red", "value": 50000}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 16}
+      },
+      {
+        "id": 9,
+        "title": "推荐多样性指标",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "recommendation_diversity_category",
+            "legendFormat": "分类多样性-{{algorithm}}"
+          },
+          {
+            "expr": "recommendation_diversity_content",
+            "legendFormat": "内容多样性-{{algorithm}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 1,
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
+      },
+      {
+        "id": 10,
+        "title": "推荐新颖性指标",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "recommendation_novelty_score",
+            "legendFormat": "新颖性-{{algorithm}}"
+          },
+          {
+            "expr": "recommendation_serendipity_score",
+            "legendFormat": "意外发现-{{algorithm}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 1,
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
+      },
+      {
+        "id": 11,
+        "title": "推荐覆盖率",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "recommendation_coverage_item",
+            "legendFormat": "物品覆盖率"
+          },
+          {
+            "expr": "recommendation_coverage_user",
+            "legendFormat": "用户覆盖率"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 50},
+                {"color": "green", "value": 80}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 32}
+      },
+      {
+        "id": 12,
+        "title": "推荐公平性指标",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "recommendation_fairness_ctr",
+            "legendFormat": "{{group}}-CTR"
+          },
+          {
+            "expr": "recommendation_fairness_exposure",
+            "legendFormat": "{{group}}-曝光率"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 32}
+      },
+      {
+        "id": 13,
+        "title": "用户会话指标",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(recommendation_session_duration_seconds_bucket[5m]))",
+            "legendFormat": "会话时长P50"
+          },
+          {
+            "expr": "recommendation_session_page_views",
+            "legendFormat": "页面浏览数"
+          },
+          {
+            "expr": "recommendation_session_interactions",
+            "legendFormat": "交互次数"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 32}
+      },
+      {
+        "id": 14,
+        "title": "推荐异常检测",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(recommendation_anomaly_low_ctr_total[5m])",
+            "legendFormat": "低CTR异常-{{content_type}}-{{algorithm}}"
+          },
+          {
+            "expr": "rate(recommendation_anomaly_low_cvr_total[5m])",
+            "legendFormat": "低CVR异常-{{content_type}}-{{algorithm}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 40}
+      }
+    ],
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}

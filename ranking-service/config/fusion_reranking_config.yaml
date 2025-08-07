@@ -1,0 +1,57 @@
+# 融合重排服务配置文件
+
+# 算法权重配置
+algorithm_weights:
+  collaborative_filtering: 0.3    # 协同过滤权重
+  content_based: 0.3             # 基于内容的推荐权重
+  deep_learning: 0.4             # 深度学习模型权重
+
+# 多样性配置
+diversity_config:
+  category_diversity_weight: 0.3      # 分类多样性权重
+  content_type_diversity_weight: 0.2  # 内容类型多样性权重
+  author_diversity_weight: 0.2        # 作者多样性权重
+  time_diversity_weight: 0.3          # 时间多样性权重
+  max_same_category_ratio: 0.4        # 同一分类最大占比
+  max_same_author_ratio: 0.3          # 同一作者最大占比
+
+# 业务规则配置
+business_rules:
+  min_content_quality_score: 0.6      # 最低内容质量分数
+  max_content_age_days: 30            # 内容最大年龄（天）
+  blocked_categories:                 # 被屏蔽的分类
+    - "spam"
+    - "adult"
+    - "violence"
+  blocked_authors: []                 # 被屏蔽的作者ID列表
+  min_user_rating: 3.0               # 最低用户评分
+  require_content_review: true        # 是否要求内容审核
+
+# 去重配置
+dedup_config:
+  similarity_threshold: 0.8           # 相似度阈值
+  title_similarity_weight: 0.4       # 标题相似度权重
+  content_similarity_weight: 0.6     # 内容相似度权重
+
+# 最终排序优化配置
+final_ranking_config:
+  base_score_weight: 0.6             # 基础得分权重
+  freshness_boost_weight: 0.15       # 新鲜度加权权重
+  popularity_boost_weight: 0.15      # 热度加权权重
+  personalization_boost_weight: 0.1  # 个性化加权权重
+  freshness_half_life_hours: 24      # 新鲜度半衰期（小时）
+  max_popularity_score: 20           # 最大热度得分
+
+# 性能配置
+performance_config:
+  max_candidates_per_algorithm: 100   # 每个算法最大候选数
+  max_fusion_candidates: 500         # 融合阶段最大候选数
+  similarity_check_batch_size: 50    # 相似度检查批次大小
+  enable_parallel_processing: true   # 启用并行处理
+
+# 监控配置
+monitoring_config:
+  log_processing_time: true          # 记录处理时间
+  log_filter_stats: true            # 记录过滤统计
+  log_diversity_stats: true         # 记录多样性统计
+  enable_metrics_collection: true   # 启用指标收集

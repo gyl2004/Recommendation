@@ -1,0 +1,68 @@
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alertmanager@recommendation.com'
+  smtp_auth_username: 'alertmanager@recommendation.com'
+  smtp_auth_password: 'password'
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'web.hook'
+  routes:
+  - match:
+      severity: critical
+    receiver: 'critical-alerts'
+  - match:
+      severity: warning
+    receiver: 'warning-alerts'
+
+receivers:
+- name: 'web.hook'
+  webhook_configs:
+  - url: 'http://127.0.0.1:5001/'
+
+- name: 'critical-alerts'
+  email_configs:
+  - to: 'admin@recommendation.com'
+    subject: '[CRITICAL] 推荐系统告警'
+    body: |
+      告警名称: {{ .GroupLabels.alertname }}
+      告警级别: {{ .CommonLabels.severity }}
+      告警时间: {{ .CommonAnnotations.timestamp }}
+      告警描述: {{ .CommonAnnotations.description }}
+      
+      详细信息:
+      {{ range .Alerts }}
+      - 实例: {{ .Labels.instance }}
+      - 服务: {{ .Labels.service }}
+      - 值: {{ .Annotations.value }}
+      {{ end }}
+  webhook_configs:
+  - url: 'http://localhost:8080/api/v1/alerts/webhook'
+    send_resolved: true
+
+- name: 'warning-alerts'
+  email_configs:
+  - to: 'ops@recommendation.com'
+    subject: '[WARNING] 推荐系统告警'
+    body: |
+      告警名称: {{ .GroupLabels.alertname }}
+      告警级别: {{ .CommonLabels.severity }}
+      告警时间: {{ .CommonAnnotations.timestamp }}
+      告警描述: {{ .CommonAnnotations.description }}
+      
+      详细信息:
+      {{ range .Alerts }}
+      - 实例: {{ .Labels.instance }}
+      - 服务: {{ .Labels.service }}
+      - 值: {{ .Annotations.value }}
+      {{ end }}
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']

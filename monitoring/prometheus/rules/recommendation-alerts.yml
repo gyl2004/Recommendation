@@ -1,0 +1,144 @@
+# 推荐系统告警规则
+groups:
+- name: recommendation.rules
+  rules:
+  
+  # 服务可用性告警
+  - alert: ServiceDown
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "服务 {{ $labels.job }} 不可用"
+      description: "服务 {{ $labels.job }} 在实例 {{ $labels.instance }} 上已经停止运行超过1分钟"
+
+  # 高响应时间告警
+  - alert: HighResponseTime
+    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.5
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.job }} 响应时间过高"
+      description: "{{ $labels.job }} 的95%响应时间超过500ms，当前值: {{ $value }}s"
+
+  # 高错误率告警
+  - alert: HighErrorRate
+    expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.job }} 错误率过高"
+      description: "{{ $labels.job }} 的5xx错误率超过5%，当前值: {{ $value | humanizePercentage }}"
+
+  # 低缓存命中率告警
+  - alert: LowCacheHitRate
+    expr: rate(cache_hits_total[5m]) / rate(cache_requests_total[5m]) < 0.8
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "缓存命中率过低"
+      description: "{{ $labels.job }} 的缓存命中率低于80%，当前值: {{ $value | humanizePercentage }}"
+
+  # 高内存使用率告警
+  - alert: HighMemoryUsage
+    expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.9
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.pod }} 内存使用率过高"
+      description: "Pod {{ $labels.pod }} 的内存使用率超过90%，当前值: {{ $value | humanizePercentage }}"
+
+  # 高CPU使用率告警
+  - alert: HighCPUUsage
+    expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.pod }} CPU使用率过高"
+      description: "Pod {{ $labels.pod }} 的CPU使用率超过80%，当前值: {{ $value | humanizePercentage }}"
+
+  # 数据库连接池告警
+  - alert: DatabaseConnectionPoolHigh
+    expr: hikaricp_connections_active / hikaricp_connections_max > 0.8
+    for: 3m
+    labels:
+      severity: warning
+    annotations:
+      summary: "数据库连接池使用率过高"
+      description: "{{ $labels.job }} 的数据库连接池使用率超过80%，当前值: {{ $value | humanizePercentage }}"
+
+  # 推荐系统业务指标告警
+  - alert: LowRecommendationCTR
+    expr: recommendation_ctr < 0.02
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "推荐点击率过低"
+      description: "推荐系统的点击率低于2%，当前值: {{ $value | humanizePercentage }}"
+
+  # 推荐服务QPS过低告警
+  - alert: LowRecommendationQPS
+    expr: rate(http_requests_total{job="recommendation-service"}[5m]) < 10
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "推荐服务QPS过低"
+      description: "推荐服务的QPS低于10，当前值: {{ $value }}"
+
+  # 消息队列积压告警
+  - alert: MessageQueueBacklog
+    expr: rabbitmq_queue_messages > 1000
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "消息队列积压"
+      description: "队列 {{ $labels.queue }} 中有 {{ $value }} 条消息积压"
+
+  # Elasticsearch集群状态告警
+  - alert: ElasticsearchClusterRed
+    expr: elasticsearch_cluster_health_status{color="red"} == 1
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Elasticsearch集群状态异常"
+      description: "Elasticsearch集群状态为红色，存在不可用的分片"
+
+  # Redis内存使用率告警
+  - alert: RedisHighMemoryUsage
+    expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Redis内存使用率过高"
+      description: "Redis实例 {{ $labels.instance }} 的内存使用率超过90%，当前值: {{ $value | humanizePercentage }}"
+
+  # 磁盘空间不足告警
+  - alert: DiskSpaceLow
+    expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "磁盘空间不足"
+      description: "节点 {{ $labels.instance }} 的磁盘 {{ $labels.mountpoint }} 可用空间少于10%"
+
+  # 网络连接数过高告警
+  - alert: HighNetworkConnections
+    expr: node_netstat_Tcp_CurrEstab > 10000
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "网络连接数过高"
+      description: "节点 {{ $labels.instance }} 的TCP连接数超过10000，当前值: {{ $value }}"
