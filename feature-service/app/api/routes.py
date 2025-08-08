@@ -265,8 +265,7 @@ async def _update_content_features_background(content_ids: List[str], force_upda
         
     except Exception as e:
         logger.error(f"后台更新内容特征失败: {e}")
-# 特征
-工程相关接口
+# 特征工程相关接口
 @feature_router.post("/engineering/normalize/users", response_model=FeatureResponse)
 async def normalize_user_features(request: BatchFeatureRequest):
     """标准化用户特征"""
@@ -502,8 +501,9 @@ async def _run_scheduled_pipeline_background(schedule_type: str):
         results = await pipeline_service.schedule_feature_pipeline(schedule_type)
         logger.info(f"调度特征管道完成: {results}")
     except Exception as e:
-        logger.error(f"调度特征管道后台任务失败: {e}")# 
-ClickHouse和离线特征相关接口
+        logger.error(f"调度特征管道后台任务失败: {e}")
+
+# ClickHouse和离线特征相关接口
 @feature_router.post("/offline/compute/users", response_model=FeatureResponse)
 async def compute_user_offline_features(
     background_tasks: BackgroundTasks,

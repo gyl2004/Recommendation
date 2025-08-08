@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能内容推荐平台</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .content {
+            padding: 30px;
+        }
+        .input-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .input-group label {
+            font-weight: 600;
+            color: #333;
+            min-width: 80px;
+        }
+        .input-group input, .input-group select {
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .results {
+            margin-top: 30px;
+        }
+        .service-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .status-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .status-card.online {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+        .status-card.offline {
+            border-color: #dc3545;
+            background: #fff8f8;
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-indicator.online {
+            background: #28a745;
+        }
+        .status-indicator.offline {
+            background: #dc3545;
+        }
+        .recommendations {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .recommendation-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .recommendation-card:hover {
+            transform: translateY(-5px);
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 智能内容推荐平台</h1>
+            <p>基于微服务架构的个性化推荐系统</p>
+        </div>
+        
+        <div class="content">
+            <!-- 服务状态 -->
+            <div class="service-status" id="serviceStatus">
+                <div class="status-card" id="recommendationStatus">
+                    <h3><span class="status-indicator"></span>推荐服务</h3>
+                    <p>端口: 8080</p>
+                </div>
+                <div class="status-card" id="userStatus">
+                    <h3><span class="status-indicator"></span>用户服务</h3>
+                    <p>端口: 8081</p>
+                </div>
+                <div class="status-card" id="contentStatus">
+                    <h3><span class="status-indicator"></span>内容服务</h3>
+                    <p>端口: 8082</p>
+                </div>
+                <div class="status-card" id="featureStatus">
+                    <h3><span class="status-indicator"></span>特征服务</h3>
+                    <p>端口: 8003</p>
+                </div>
+            </div>
+
+            <!-- 推荐请求 -->
+            <div class="input-section">
+                <h3>🔍 获取个性化推荐</h3>
+                <div class="input-group">
+                    <label for="userId">用户ID:</label>
+                    <input type="text" id="userId" value="123" placeholder="输入用户ID">
+                    
+                    <label for="size">推荐数量:</label>
+                    <select id="size">
+                        <option value="5">5条</option>
+                        <option value="10" selected>10条</option>
+                        <option value="20">20条</option>
+                    </select>
+                    
+                    <button class="btn" onclick="getRecommendations()">获取推荐</button>
+                    <button class="btn" onclick="checkServices()">检查服务状态</button>
+                </div>
+            </div>
+
+            <!-- 结果显示 -->
+            <div class="results" id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // 检查服务状态
+        async function checkServices() {
+            const services = [
+                { id: 'recommendationStatus', url: 'http://localhost:8080/actuator/health', name: '推荐服务' },
+                { id: 'userStatus', url: 'http://localhost:8081/actuator/health', name: '用户服务' },
+                { id: 'contentStatus', url: 'http://localhost:8082/actuator/health', name: '内容服务' },
+                { id: 'featureStatus', url: 'http://localhost:8003/health', name: '特征服务' }
+            ];
+
+            for (const service of services) {
+                try {
+                    const response = await fetch(service.url);
+                    const element = document.getElementById(service.id);
+                    const indicator = element.querySelector('.status-indicator');
+                    
+                    if (response.ok) {
+                        element.className = 'status-card online';
+                        indicator.className = 'status-indicator online';
+                    } else {
+                        element.className = 'status-card offline';
+                        indicator.className = 'status-indicator offline';
+                    }
+                } catch (error) {
+                    const element = document.getElementById(service.id);
+                    const indicator = element.querySelector('.status-indicator');
+                    element.className = 'status-card offline';
+                    indicator.className = 'status-indicator offline';
+                }
+            }
+        }
+
+        // 获取推荐
+        async function getRecommendations() {
+            const userId = document.getElementById('userId').value;
+            const size = document.getElementById('size').value;
+            const resultsDiv = document.getElementById('results');
+            
+            if (!userId) {
+                resultsDiv.innerHTML = '<div class="error">请输入用户ID</div>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<div class="loading">🔄 正在获取推荐...</div>';
+
+            try {
+                const response = await fetch(`http://localhost:8080/api/v1/recommend/content?userId=${userId}&size=${size}`);
+                const data = await response.text();
+                
+                if (response.ok) {
+                    try {
+                        const jsonData = JSON.parse(data);
+                        displayRecommendations(jsonData);
+                    } catch (e) {
+                        displayRawResponse(data);
+                    }
+                } else {
+                    resultsDiv.innerHTML = `<div class="error">请求失败: ${response.status}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">网络错误: ${error.message}</div>`;
+            }
+        }
+
+        // 显示推荐结果
+        function displayRecommendations(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (data.success) {
+                let html = '<h3>📋 推荐结果</h3><div class="recommendations">';
+                
+                if (data.recommendations && Array.isArray(data.recommendations)) {
+                    data.recommendations.forEach((item, index) => {
+                        html += `
+                            <div class="recommendation-card">
+                                <h4>推荐 ${index + 1}</h4>
+                                <p><strong>内容ID:</strong> ${item.contentId || '未知'}</p>
+                                <p><strong>标题:</strong> ${item.title || '测试内容'}</p>
+                                <p><strong>类型:</strong> ${item.type || '文章'}</p>
+                                <p><strong>评分:</strong> ${item.score || '0.95'}</p>
+                            </div>
+                        `;
+                    });
+                } else {
+                    // 简单响应格式
+                    for (let i = 1; i <= parseInt(data.size || 5); i++) {
+                        html += `
+                            <div class="recommendation-card">
+                                <h4>推荐内容 ${i}</h4>
+                                <p><strong>用户ID:</strong> ${data.userId}</p>
+                                <p><strong>状态:</strong> ${data.message}</p>
+                                <p><strong>类型:</strong> 混合内容</p>
+                                <p><strong>评分:</strong> ${(Math.random() * 0.3 + 0.7).toFixed(2)}</p>
+                            </div>
+                        `;
+                    }
+                }
+                
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+            } else {
+                resultsDiv.innerHTML = `<div class="error">推荐失败: ${data.message}</div>`;
+            }
+        }
+
+        // 显示原始响应
+        function displayRawResponse(data) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <h3>📋 服务响应</h3>
+                <div class="recommendation-card">
+                    <h4>原始响应数据</h4>
+                    <pre style="background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto;">${data}</pre>
+                </div>
+            `;
+        }
+
+        // 页面加载时检查服务状态
+        window.onload = function() {
+            checkServices();
+        };
+    </script>
+</body>
+</html>

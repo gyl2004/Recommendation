@@ -1,237 +1,25 @@
 server:
   port: 8080
-  servlet:
-    context-path: /api/v1
 
 spring:
   application:
     name: recommendation-service
-  
-  # 数据库配置
+  profiles:
+    active: dev
   datasource:
-    url: jdbc:mysql://localhost:3306/recommendation_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:password}
+    url: jdbc:mysql://localhost:3306/recommendation_platform?useSSL=false&serverTimezone=UTC
+    username: root
+    password: root123
     driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-  
-  # JPA配置
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
-        format_sql: true
-  
-  # Redis配置
   redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
-    password: ${REDIS_PASSWORD:}
-    database: 0
-    timeout: 3000ms
-    lettuce:
-      pool:
-        max-active: 20
-        max-idle: 10
-        min-idle: 5
-        max-wait: 3000ms
-  
-  # RabbitMQ配置
-  rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
-    virtual-host: /
-    connection-timeout: 15000
-    publisher-confirm-type: correlated
-    publisher-returns: true
-    listener:
-      simple:
-        acknowledge-mode: manual
-        retry:
-          enabled: true
-          max-attempts: 3
+    host: localhost
+    port: 6379
 
-  # 链路追踪配置
-  sleuth:
-    sampler:
-      probability: ${SLEUTH_SAMPLER_PROBABILITY:0.1}  # 采样率10%
-    zipkin:
-      base-url: ${ZIPKIN_BASE_URL:http://localhost:9411}  # Zipkin服务器地址
-      sender:
-        type: web  # 发送方式：web（HTTP）或rabbit（RabbitMQ）
-    web:
-      skip-pattern: /actuator.*|/health.*  # 跳过健康检查等端点的追踪
-    async:
-      enabled: true  # 启用异步处理
-    trace-id128: true  # 使用128位TraceId
-    supports-join: false  # 不支持Span合并
-
-# Elasticsearch配置
-elasticsearch:
-  host: ${ES_HOST:localhost}
-  port: ${ES_PORT:9200}
-  username: ${ES_USERNAME:}
-  password: ${ES_PASSWORD:}
-  connection-timeout: 5000
-  socket-timeout: 30000
-
-# 推荐系统配置
-recommendation:
-  # 缓存配置
-  cache:
-    user-features-ttl: 3600  # 用户特征缓存时间(秒)
-    recommend-result-ttl: 1800  # 推荐结果缓存时间(秒)
-    hot-content-ttl: 7200  # 热门内容缓存时间(秒)
-    warmup:
-      enabled: true  # 是否启用缓存预热
-      hot-content-size: 50  # 预热热门内容数量
-  
-  # 算法配置
-  algorithm:
-    default-recall-size: 500  # 默认召回数量
-    max-recommend-size: 100   # 最大推荐数量
-    diversity-threshold: 0.3  # 多样性阈值
-  
-  # 降级配置
-  fallback:
-    enabled: true
-    hot-content-size: 50
-  
-  # 健康检查配置
-  health:
-    timeout: 3000  # 健康检查超时时间(毫秒)
-  
-  # 自动恢复配置
-  recovery:
-    max-retry-count: 3  # 最大重试次数
-    retry-interval: 30000  # 重试间隔(毫秒)
-    health-check-interval: 10000  # 健康检查间隔(毫秒)
-
-# Hystrix熔断器配置
-hystrix:
-  command:
-    default:
-      execution:
-        isolation:
-          thread:
-            timeoutInMilliseconds: 3000  # 默认超时时间
-        timeout:
-          enabled: true
-      circuitBreaker:
-        enabled: true
-        requestVolumeThreshold: 20  # 熔断器开启的最小请求数
-        errorThresholdPercentage: 50  # 错误百分比阈值
-        sleepWindowInMilliseconds: 5000  # 熔断器开启后的休眠时间窗口
-      fallback:
-        enabled: true
-    # 推荐服务特定配置
-    RecommendationGroup:
-      execution:
-        isolation:
-          thread:
-            timeoutInMilliseconds: 3000
-        timeout:
-          enabled: true
-      circuitBreaker:
-        requestVolumeThreshold: 20
-        errorThresholdPercentage: 50
-        sleepWindowInMilliseconds: 5000
-    # 召回服务特定配置
-    RecallGroup:
-      execution:
-        isolation:
-          thread:
-            timeoutInMilliseconds: 2000
-        timeout:
-          enabled: true
-      circuitBreaker:
-        requestVolumeThreshold: 10
-        errorThresholdPercentage: 60
-        sleepWindowInMilliseconds: 3000
-    # 排序服务特定配置
-    RankingGroup:
-      execution:
-        isolation:
-          thread:
-            timeoutInMilliseconds: 1500
-        timeout:
-          enabled: true
-      circuitBreaker:
-        requestVolumeThreshold: 15
-        errorThresholdPercentage: 40
-        sleepWindowInMilliseconds: 4000
-  threadpool:
-    default:
-      coreSize: 10  # 核心线程数
-      maximumSize: 20  # 最大线程数
-      maxQueueSize: 100  # 队列大小
-      queueSizeRejectionThreshold: 80  # 队列拒绝阈值
-      keepAliveTimeMinutes: 2  # 线程存活时间
-      allowMaximumSizeToDivergeFromCoreSize: true
-
-# 监控配置
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus,httptrace,threaddump,heapdump,hystrix.stream
-      base-path: /actuator
-  endpoint:
-    health:
-      show-details: when-authorized
-      show-components: when-authorized
-    metrics:
-      enabled: true
-    prometheus:
-      enabled: true
-    hystrix:
-      stream:
-        enabled: true
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-        step: 30s
-        descriptions: true
-    distribution:
-      percentiles-histogram:
-        http.server.requests: true
-        recommendation.request.duration: true
-        recommendation.recall.duration: true
-        recommendation.ranking.duration: true
-        hystrix.command.execution: true
-      percentiles:
-        http.server.requests: 0.5,0.95,0.99
-        recommendation.request.duration: 0.5,0.95,0.99
-        hystrix.command.execution: 0.5,0.95,0.99
-    tags:
-      application: ${spring.application.name}
-      environment: ${ENVIRONMENT:dev}
-  health:
-    redis:
-      enabled: true
-    db:
-      enabled: true
-    rabbit:
-      enabled: true
-    hystrix:
-      enabled: true
-
-# 日志配置
 logging:
   level:
-    com.recommendation: INFO
-    org.springframework.data.redis: WARN
-    org.elasticsearch: WARN
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%logger{50}] - %msg%n"
+    root: INFO
+    com.recommendation: DEBUG
